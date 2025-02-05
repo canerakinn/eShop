@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Ordering.Domain.Events;
 
 namespace eShop.Ordering.Domain.AggregatesModel.OrderAggregate;
 
@@ -183,4 +184,17 @@ public class Order
     }
 
     public decimal GetTotal() => _orderItems.Sum(o => o.Units * o.UnitPrice);
+
+    public void SetCompleted()
+    {
+        if (OrderStatus == OrderStatus.Paid && OrderStatus == OrderStatus.Shipped)
+        {
+            OrderStatus = OrderStatus.Completed;
+            AddDomainEvent(new OrderStatusChangedToCompletedDomainEvent(Id));
+        }
+        else
+        {
+            throw new OrderingDomainException("Order cannot be completed if it's not in paid status");
+        }
+    }
 }

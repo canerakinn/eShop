@@ -8,6 +8,7 @@ public static class OrdersApi
     {
         var api = app.MapGroup("api/orders").HasApiVersion(1.0);
 
+        api.MapPut("/complete", CompleteOrderAsync);
         api.MapPut("/cancel", CancelOrderAsync);
         api.MapPut("/ship", ShipOrderAsync);
         api.MapGet("{orderId:int}", GetOrderAsync);
@@ -165,6 +166,31 @@ public static class OrdersApi
 
             return TypedResults.Ok();
         }
+    }
+   public static async Task<Results<Ok, BadRequest<string>>> CompleteOrderAsync(
+   [FromHeader(Name = "x-orderId")] int orderId,
+   [AsParameters] OrderServices services)
+    {
+        if (orderId <= 0)
+        {
+            services.Logger.LogWarning("Invalid request - orderId is missing or invalid: {OrderId}", orderId);
+            return TypedResults.BadRequest("OrderId is missing or invalid.");
+        }
+
+        var command = new CompleteOrderCommand(orderId);
+        var result = await services.Mediator.Send(command);
+
+
+        if (result)
+        {
+            services.Logger.LogInformation("CompleteOrderCommand succeeded - OrderId: {OrderId}", orderId);
+        }
+        else
+        {
+            services.Logger.LogWarning("CompleteOrderCommand failed - OrderId: {OrderId}", orderId);
+        }
+
+        return TypedResults.Ok();
     }
 }
 
